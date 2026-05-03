@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mythos Study System</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>🏛️ Mythos Study System</h1>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-btn-characters" onclick="window.switchTab('characters', this)">📚 Characters</button>
+    <button class="nav-tab" id="tab-btn-tree" onclick="window.switchTab('tree', this)">🌳 Family Tree</button>
+    <button class="nav-tab" id="tab-btn-notes" onclick="window.switchTab('notes', this)">📝 Notes</button>
+  </div>
+</header>
+
+<!-- ===== CHARACTERS TAB ===== -->
+<div id="tab-characters" class="view active">
+
+  <!-- LIST VIEW -->
+  <div id="listView">
+    <div class="add-form" style="max-width:700px">
+      <h2>➕ Add New Character</h2>
+      <div class="form-row">
+        <div>
+          <div class="section-label">Name *</div>
+          <input id="name" placeholder="e.g. Achilles" autocomplete="off">
+        </div>
+        <div>
+          <div class="section-label">Type</div>
+          <select id="type">
+            <option value="">Select Type</option>
+            <option>God</option><option>Goddess</option><option>Titan</option>
+            <option>Hero</option><option>Demigod</option><option>Monster</option>
+            <option>Mortal</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="section-label">Image URL (optional)</div>
+      <input id="image" placeholder="Paste a direct image link (.jpg, .png, .webp)" autocomplete="off">
+      <div class="section-label">Tags (comma separated — e.g. Olympian, Trojan War, Warrior)</div>
+      <input id="tags" placeholder="e.g. Olympian, Trojan War, Warrior" autocomplete="off">
+
+      <div class="section-label" style="margin-top:6px">Relationships</div>
+      <div class="form-row">
+        <div>
+          <div class="section-label">Parents</div>
+          <input id="parents" placeholder="Thetis, Peleus" autocomplete="off">
+          <div class="section-label">Siblings</div>
+          <input id="siblings" placeholder="Comma separated" autocomplete="off">
+          <div class="section-label">Spouse / Partner</div>
+          <input id="spouse" placeholder="Comma separated" autocomplete="off">
+          <div class="section-label">Friends / Allies</div>
+          <input id="friends" placeholder="Comma separated" autocomplete="off">
+        </div>
+        <div>
+          <div class="section-label">Children</div>
+          <input id="children" placeholder="Comma separated" autocomplete="off">
+          <div class="section-label">Other Relatives</div>
+          <input id="relatives" placeholder="Comma separated" autocomplete="off">
+          <div class="section-label">Enemies</div>
+          <input id="enemies" placeholder="Comma separated" autocomplete="off">
+          <div class="section-label">Complicated (name: note)</div>
+          <input id="complicated" placeholder="Patroclus: they were roommates" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:6px">Notes (use [[Name]] to link)</div>
+      <textarea id="notes" placeholder="Write your study notes here. Use [[Zeus]] to link characters."></textarea>
+      <button onclick="window.addCharacter()">Save Character</button>
+    </div>
+
+    <!-- Search + Tag Filter -->
+    <div class="search-bar" style="max-width:700px">
+      <input id="searchInput" placeholder="🔍 Search characters..." oninput="window.filterCards()" autocomplete="off">
+      <select id="typeFilter" onchange="window.filterCards()">
+        <option value="">All Types</option>
+        <option>God</option><option>Goddess</option><option>Titan</option>
+        <option>Hero</option><option>Demigod</option><option>Monster</option>
+        <option>Mortal</option><option>Other</option>
+      </select>
+    </div>
+    <div class="tag-filter-bar" id="tagFilterBar" style="max-width:700px"></div>
+
+    <div class="card-grid" id="characters">
+      <div class="empty-state">Loading characters...</div>
+    </div>
+  </div>
+
+  <!-- PAGE VIEW -->
+  <div id="pageView" style="display:none; padding:24px;">
+    <div class="max-wrap">
+      <button class="back-btn" onclick="window.backToList()">⬅ Back to All Characters</button>
+      <div id="characterDetails"></div>
+    </div>
+  </div>
+
+  <!-- EDIT VIEW -->
+  <div id="editView" style="display:none; padding:24px; max-width:700px; margin:0 auto;">
+    <button class="back-btn" id="editBackBtn">⬅ Cancel</button>
+    <h2 style="color:#e2b96f; margin-bottom:16px;">✏️ Edit Character</h2>
+
+    <div class="form-row">
+      <div>
+        <div class="section-label">Name *</div>
+        <input id="editName" placeholder="Name" autocomplete="off">
+      </div>
+      <div>
+        <div class="section-label">Type</div>
+        <select id="editType">
+          <option value="">Select Type</option>
+          <option>God</option><option>Goddess</option><option>Titan</option>
+          <option>Hero</option><option>Demigod</option><option>Monster</option>
+          <option>Mortal</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="section-label">Image URL</div>
+    <input id="editImage" placeholder="Paste direct image link" autocomplete="off">
+    <div class="section-label">Tags (comma separated)</div>
+    <input id="editTags" placeholder="e.g. Olympian, Trojan War" autocomplete="off">
+
+    <div class="edit-section-title">Relationships</div>
+    <div class="form-row">
+      <div>
+        <div class="section-label">Parents</div>
+        <input id="editParents" placeholder="Comma separated" autocomplete="off">
+        <div class="section-label">Siblings</div>
+        <input id="editSiblings" placeholder="Comma separated" autocomplete="off">
+        <div class="section-label">Spouse / Partner</div>
+        <input id="editSpouse" placeholder="Comma separated" autocomplete="off">
+        <div class="section-label">Friends / Allies</div>
+        <input id="editFriends" placeholder="Comma separated" autocomplete="off">
+      </div>
+      <div>
+        <div class="section-label">Children</div>
+        <input id="editChildren" placeholder="Comma separated" autocomplete="off">
+        <div class="section-label">Other Relatives</div>
+        <input id="editRelatives" placeholder="Comma separated" autocomplete="off">
+        <div class="section-label">Enemies</div>
+        <input id="editEnemies" placeholder="Comma separated" autocomplete="off">
+        <div class="section-label">Complicated (name: note)</div>
+        <input id="editComplicated" placeholder="Patroclus: they were roommates" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:6px">Notes</div>
+    <textarea id="editNotes" placeholder="Notes — use [[Name]] to link characters"></textarea>
+
+    <div class="edit-actions">
+      <button class="btn-save" onclick="window.saveEdit()">💾 Save Changes</button>
+      <button class="btn-cancel" id="editCancelBtn">Cancel</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== FAMILY TREE TAB ===== -->
+<div id="tab-tree" class="view" style="padding:24px;">
+  <div style="max-width:1100px; margin:0 auto;">
+
+    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+      <button onclick="window.toggleLegend()" style="background:#0f3460; color:#e2b96f; border:1px solid #e2b96f; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.82rem;">📖 Show Legend</button>
+    </div>
+
+    <!-- LEGEND PANEL -->
+    <div id="legendPanel" style="display:none; background:#16213e; border:1px solid #0f3460; border-radius:14px; padding:18px; margin-bottom:16px; max-width:600px;">
+      <h3 style="color:#e2b96f; font-size:0.95rem; margin-bottom:14px;">🗺️ Tree Legend</h3>
+      <p style="color:#a89b8a; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Node Colours (Character Type)</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:50%;background:#4fc3f7;flex-shrink:0"></div><span style="font-size:0.82rem;color:#e0d7c6;">God / Goddess</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:50%;background:#a5d6a7;flex-shrink:0"></div><span style="font-size:0.82rem;color:#e0d7c6;">Hero / Demigod</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:50%;background:#ef9a9a;flex-shrink:0"></div><span style="font-size:0.82rem;color:#e0d7c6;">Titan</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:50%;background:#ffcc80;flex-shrink:0"></div><span style="font-size:0.82rem;color:#e0d7c6;">Monster</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:50%;background:#ce93d8;flex-shrink:0"></div><span style="font-size:0.82rem;color:#e0d7c6;">Mortal</span></div>
+        <div style="display:flex;align-items:center;gap:8px;"><div style="width:16px;height:16px;border-radius:50%;background:#b0bec5;flex-shrink:0"></div><span style="font-size:0.82rem;color:#e0d7c6;">Other</span></div>
+      </div>
+      <p style="color:#a89b8a; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Connector Lines (Relationship Type)</p>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg width="60" height="14"><line x1="0" y1="7" x2="50" y2="7" stroke="#e2b96f" stroke-width="3"/><polygon points="50,3 60,7 50,11" fill="#e2b96f"/></svg>
+          <span style="font-size:0.85rem;color:#e0d7c6;">Parent → Child (gold, solid arrow)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg width="60" height="14"><line x1="0" y1="7" x2="60" y2="7" stroke="#f48fb1" stroke-width="2" stroke-dasharray="5,5"/></svg>
+          <span style="font-size:0.85rem;color:#e0d7c6;">Sibling (pink, dashed)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg width="60" height="14"><line x1="0" y1="7" x2="60" y2="7" stroke="#80cbc4" stroke-width="3"/></svg>
+          <span style="font-size:0.85rem;color:#e0d7c6;">Spouse / Partner (teal, thick)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg width="60" height="14"><line x1="0" y1="7" x2="60" y2="7" stroke="#ef5350" stroke-width="2" stroke-dasharray="3,7"/></svg>
+          <span style="font-size:0.85rem;color:#e0d7c6;">Enemy (red, dotted)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg width="60" height="14"><line x1="0" y1="7" x2="60" y2="7" stroke="#aed581" stroke-width="2" stroke-dasharray="8,4"/></svg>
+          <span style="font-size:0.85rem;color:#e0d7c6;">Friend / Ally (green, long dashes)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <svg width="60" height="14"><line x1="0" y1="7" x2="60" y2="7" stroke="#ce93d8" stroke-width="2" stroke-dasharray="2,6"/></svg>
+          <span style="font-size:0.85rem;color:#e0d7c6;">Complicated (purple, fine dots)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tree-controls">
+      <label>Focus:</label>
+      <select id="treeFocusSelect" onchange="window.buildTree()">
+        <option value="all">🌍 Full Tree</option>
+      </select>
+      <label>Show:</label>
+      <select id="treeRelFilter" onchange="window.buildTree()">
+        <option value="all">All Relationships</option>
+        <option value="family">Family Only (parent/child/sibling)</option>
+        <option value="spouse">+ Spouse</option>
+      </select>
+      <button onclick="window.buildTree()">🔄 Refresh</button>
+    </div>
+
+    <div id="familyTreeContainer">
+      <div id="familyTreeNetwork"></div>
+    </div>
+
+    <div class="tree-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#4fc3f7"></div> God/Goddess</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#a5d6a7"></div> Hero/Demigod</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef9a9a"></div> Titan</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffcc80"></div> Monster</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ce93d8"></div> Mortal</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#b0bec5"></div> Other</div>
+      <div style="width:1px; background:#0f3460; margin:0 4px;"></div>
+      <div class="legend-item"><div class="legend-line" style="background:#e2b96f"></div> Parent → Child</div>
+      <div class="legend-item"><div class="legend-line" style="background:#f48fb1; border-top: 2px dashed #f48fb1; background:none; border-radius:0;"></div> Sibling</div>
+      <div class="legend-item"><div class="legend-line" style="background:#80cbc4"></div> Spouse</div>
+      <div class="legend-item"><div class="legend-line" style="background:#ef5350"></div> Enemy</div>
+      <div class="legend-item"><div class="legend-line" style="background:#aed581"></div> Friend</div>
+    </div>
+
+    <div class="tree-tip">
+      💡 Scroll to zoom · Drag to pan · Click a node to open character page · Arrow = parent→child · Dashed pink = sibling · Teal = spouse
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOTES TAB ===== -->
+<div id="tab-notes" class="view" style="padding:0; height:calc(100vh - 60px); flex-direction:row;">
+
+  <!-- SIDEBAR -->
+  <div id="notesSidebar" style="width:260px; min-width:220px; background:#16213e; border-right:1px solid #0f3460; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+    <div style="padding:14px 14px 10px; border-bottom:1px solid #0f3460;">
+      <div style="display:flex;gap:6px;margin-bottom:2px;">
+        <button onclick="window.createNote()" style="flex:1; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">+ New Note</button>
+        <button onclick="window.openTemplateManager()" title="Manage note types & templates" style="padding:9px 11px; background:#0f3460; color:#e2b96f; border:1px solid #e2b96f; border-radius:8px; cursor:pointer; font-size:0.85rem;">⚙️</button>
+      </div>
+      <input id="noteSearch" placeholder="🔍 Search notes..." oninput="window.renderNoteList()" autocomplete="off"
+        style="width:100%; margin-top:9px; padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.82rem;">
+    </div>
+    <div id="noteList" style="flex:1; overflow-y:auto; padding:8px 6px;"></div>
+    <div style="padding:10px 14px; border-top:1px solid #0f3460; display:flex; flex-direction:column; gap:7px;">
+      <button onclick="window.showGraphView()" style="width:100%; padding:7px; background:#0f3460; color:#e2b96f; border:1px solid #e2b96f; border-radius:8px; cursor:pointer; font-size:0.82rem;">🕸 Graph View</button>
+      <button onclick="window.showExportModal()" style="width:100%; padding:7px; background:#1a1a2e; color:#a89b8a; border:1px solid #0f3460; border-radius:8px; cursor:pointer; font-size:0.82rem;">📦 Export All</button>
+    </div>
+  </div>
+
+  <!-- EDITOR AREA -->
+  <div id="notesMain" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+
+    <!-- NOTE EDITOR -->
+    <div id="noteEditor" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+      <div style="padding:10px 18px; border-bottom:1px solid #0f3460; display:flex; align-items:center; gap:10px; background:#1a1a2e; flex-wrap:wrap;">
+        <input id="noteTitleInput" placeholder="Note title..." autocomplete="off"
+          style="flex:1; min-width:140px; background:transparent; border:none; color:#e2b96f; font-size:1.05rem; font-family:Georgia,serif; font-weight:bold; outline:none;"
+          oninput="window.autoSaveNote()">
+        <select id="noteTypeSelect" onchange="window.onNoteTypeChange()"
+          style="background:#16213e; color:#e0d7c6; border:1px solid #0f3460; border-radius:6px; padding:5px 9px; font-size:0.78rem; cursor:pointer; max-width:220px;">
+          <option value="">📄 General Note</option>
+        </select>
+        <input id="noteTagsInput" placeholder="#tags" autocomplete="off"
+          style="width:160px; background:#16213e; border:1px solid #0f3460; border-radius:6px; color:#7ec8e3; font-size:0.78rem; padding:5px 9px; outline:none;"
+          oninput="window.autoSaveNote()">
+        <button onclick="window.deleteCurrentNote()" title="Delete note"
+          style="background:transparent; border:1px solid #c0392b; color:#c0392b; padding:5px 10px; border-radius:6px; cursor:pointer; font-size:0.8rem;">🗑</button>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div style="padding:6px 18px; border-bottom:1px solid #0f3460; display:flex; gap:6px; flex-wrap:wrap; background:#16213e;">
+        <button class="tb-btn" onclick="window.insertMd('**','**')" title="Bold"><b>B</b></button>
+        <button class="tb-btn" onclick="window.insertMd('*','*')" title="Italic"><i>I</i></button>
+        <button class="tb-btn" onclick="window.insertMd('# ','')" title="Heading">H1</button>
+        <button class="tb-btn" onclick="window.insertMd('## ','')" title="Heading 2">H2</button>
+        <button class="tb-btn" onclick="window.insertMd('- ','')" title="Bullet">•</button>
+        <button class="tb-btn" onclick="window.insertMd('> ','')" title="Quote">❝</button>
+        <button class="tb-btn" onclick="window.insertMd('`','`')" title="Code">⌨</button>
+        <button class="tb-btn" onclick="window.insertMd('[[',']]')" title="Link to note">[[]]</button>
+        <span style="color:#0f3460;padding:0 4px;">|</span>
+        <button class="tb-btn tb-btn-active" id="modeBtn" onclick="window.togglePreview()">👁 Preview</button>
+        <span style="color:#0f3460;padding:0 4px;">|</span>
+        <button class="tb-btn" onclick="window.exportCurrentNote()" title="Export this note as .md">⬇ Export Note</button>
+      </div>
+
+      <div style="flex:1; display:flex; overflow:hidden;">
+        <textarea id="noteBody" placeholder="Start writing... Use [[Note Title]] to link to other notes or [[Character Name]] to link to characters."
+          style="flex:1; background:#1a1a2e; color:#e0d7c6; border:none; padding:20px 24px; font-size:0.92rem; font-family:Georgia,serif; line-height:1.8; resize:none; outline:none;"
+          oninput="window.autoSaveNote()"></textarea>
+        <div id="notePreview" style="flex:1; background:#1a1a2e; color:#e0d7c6; padding:20px 24px; font-size:0.92rem; font-family:Georgia,serif; line-height:1.8; overflow-y:auto; display:none; border-left:1px solid #0f3460;"></div>
+      </div>
+
+      <!-- BACKLINKS PANEL -->
+      <div id="noteBacklinksBar" style="padding:10px 18px; border-top:1px solid #0f3460; background:#16213e; font-size:0.8rem; color:#a89b8a; min-height:36px;">
+        <span style="color:#7ec8e3; font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; margin-right:8px;">🔗 Linked from:</span>
+        <span id="noteBacklinksList">—</span>
+      </div>
+    </div>
+
+    <!-- GRAPH VIEW -->
+    <div id="graphView" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+      <div style="padding:12px 18px; border-bottom:1px solid #0f3460; display:flex; align-items:center; gap:10px; background:#1a1a2e;">
+        <span style="color:#e2b96f; font-size:1rem; font-weight:bold; font-family:Georgia,serif;">🕸 Graph View</span>
+        <button onclick="window.hideGraphView()" style="margin-left:auto; background:transparent; border:1px solid #0f3460; color:#a89b8a; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.8rem;">← Back to Editor</button>
+      </div>
+      <div id="graphCanvas" style="flex:1; background:#1a1a2e; position:relative; overflow:hidden;"></div>
+      <div style="padding:8px 18px; border-top:1px solid #0f3460; font-size:0.75rem; color:#a89b8a; background:#16213e;">
+        💡 Nodes = notes & characters · Edges = [[links]] · Click a node to open it · Drag to pan · Scroll to zoom
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== EXPORT MODAL ===== -->
+<div id="exportModal" style="display:none; position:fixed; inset:0; background:#000000aa; z-index:999; align-items:center; justify-content:center;">
+  <div style="background:#16213e; border:1px solid #e2b96f; border-radius:18px; padding:28px; max-width:520px; width:90%; max-height:85vh; overflow-y:auto; position:relative;">
+    <button onclick="window.closeExportModal()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:#a89b8a;font-size:1.3rem;cursor:pointer;">✕</button>
+    <h2 style="color:#e2b96f; margin-bottom:6px; font-size:1.1rem;">📦 Export to Obsidian / Markdown</h2>
+    <p style="color:#a89b8a; font-size:0.8rem; margin-bottom:18px;">Each file is a clean <code style="background:#0f3460;padding:2px 6px;border-radius:4px;">.md</code> file ready to drop into your Obsidian vault.</p>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="background:#1a1a2e; border:1px solid #0f3460; border-radius:12px; padding:16px;">
+        <div style="color:#e0d7c6; font-size:0.9rem; font-weight:bold; margin-bottom:6px;">📝 Notes</div>
+        <div style="color:#a89b8a; font-size:0.8rem; margin-bottom:12px;" id="exportNoteCount">Loading...</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="window.exportAllNotes()" style="flex:1; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">⬇ Export All Notes</button>
+          <button onclick="window.exportNoteZip()" style="flex:1; padding:9px; background:#0f3460; color:#e2b96f; border:1px solid #e2b96f; border-radius:8px; cursor:pointer; font-size:0.85rem;">🗜 Download as ZIP</button>
+        </div>
+      </div>
+      <div style="background:#1a1a2e; border:1px solid #0f3460; border-radius:12px; padding:16px;">
+        <div style="color:#e0d7c6; font-size:0.9rem; font-weight:bold; margin-bottom:6px;">🏛️ Characters</div>
+        <div style="color:#a89b8a; font-size:0.8rem; margin-bottom:12px;" id="exportCharCount">Loading...</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="window.exportAllCharacters()" style="flex:1; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">⬇ Export All Characters</button>
+          <button onclick="window.exportCharZip()" style="flex:1; padding:9px; background:#0f3460; color:#e2b96f; border:1px solid #e2b96f; border-radius:8px; cursor:pointer; font-size:0.85rem;">🗜 Download as ZIP</button>
+        </div>
+      </div>
+      <div style="background:#1a1a2e; border:1px solid #0f3460; border-radius:12px; padding:16px;">
+        <div style="color:#e0d7c6; font-size:0.9rem; font-weight:bold; margin-bottom:6px;">📚 Everything</div>
+        <div style="color:#a89b8a; font-size:0.8rem; margin-bottom:12px;">All notes + all characters in one ZIP vault</div>
+        <button onclick="window.exportFullVault()" style="width:100%; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.88rem;">🏛️ Export Full Mythos Vault (.zip)</button>
+      </div>
+    </div>
+    <div style="margin-top:16px; background:#0f3460; border-radius:10px; padding:12px 14px; font-size:0.78rem; color:#a89b8a; line-height:1.6;">
+      💡 <b style="color:#e2b96f;">How to import into Obsidian:</b><br>
+      1. Unzip the downloaded file<br>
+      2. Move the folder into your Obsidian vault folder<br>
+      3. Open Obsidian → all notes appear with [[links]] intact ✅
+    </div>
+  </div>
+</div>
+
+<!-- ===== TEMPLATE MANAGER MODAL ===== -->
+<div id="templateManagerModal" style="display:none; position:fixed; inset:0; background:#000000bb; z-index:1000; align-items:flex-start; justify-content:center; padding-top:40px; overflow-y:auto;">
+  <div style="background:#16213e; border:1px solid #e2b96f; border-radius:18px; padding:26px; max-width:680px; width:93%; position:relative; margin-bottom:40px;">
+    <button onclick="window.closeTemplateManager()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:#a89b8a;font-size:1.3rem;cursor:pointer;">✕</button>
+    <h2 style="color:#e2b96f; margin-bottom:4px; font-size:1.05rem;">⚙️ Note Types & Templates</h2>
+    <p style="color:#a89b8a; font-size:0.78rem; margin-bottom:18px;">Each type has an emoji, name, category, tag, and a markdown template that auto-fills when selected.</p>
+
+    <div style="background:#1a1a2e; border:1px solid #0f3460; border-radius:12px; padding:16px; margin-bottom:16px;">
+      <div style="color:#e2b96f; font-size:0.82rem; font-weight:bold; margin-bottom:10px;">➕ Add New Type</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
+        <input id="nt_emoji" placeholder="Emoji e.g. 🔴" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#16213e; color:#e0d7c6; font-size:0.85rem;">
+        <input id="nt_name" placeholder="Name e.g. Anger & Conflict" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#16213e; color:#e0d7c6; font-size:0.85rem;">
+        <input id="nt_category" placeholder="Category e.g. Human Nature" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#16213e; color:#e0d7c6; font-size:0.85rem;">
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+        <input id="nt_tag" placeholder="Tag e.g. theme/anger" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#16213e; color:#e0d7c6; font-size:0.85rem;">
+        <input id="nt_obsidian_link" placeholder="Obsidian link name (optional)" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#16213e; color:#e0d7c6; font-size:0.85rem;">
+      </div>
+      <textarea id="nt_template" placeholder="Markdown template — use {{title}}, {{tag}}, {{date}} as placeholders" style="width:100%; height:120px; padding:9px 12px; border-radius:8px; border:1px solid #0f3460; background:#16213e; color:#e0d7c6; font-size:0.82rem; font-family:monospace; resize:vertical;"></textarea>
+      <button onclick="window.addNoteType()" style="margin-top:8px; padding:9px 20px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">Save Type</button>
+    </div>
+
+    <div id="noteTypeList" style="display:flex; flex-direction:column; gap:8px;"></div>
+  </div>
+</div>
+
+<!-- TEMPLATE EDIT MODAL -->
+<div id="templateEditModal" style="display:none; position:fixed; inset:0; background:#000000bb; z-index:1001; align-items:center; justify-content:center;">
+  <div style="background:#16213e; border:1px solid #e2b96f; border-radius:16px; padding:24px; max-width:540px; width:92%; position:relative;">
+    <button onclick="window.closeTemplateEdit()" style="position:absolute;top:12px;right:14px;background:transparent;border:none;color:#a89b8a;font-size:1.2rem;cursor:pointer;">✕</button>
+    <h3 style="color:#e2b96f; margin-bottom:14px; font-size:1rem;">✏️ Edit Note Type</h3>
+    <input type="hidden" id="edit_nt_id">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; margin-bottom:7px;">
+      <input id="edit_nt_emoji" placeholder="Emoji" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.85rem;">
+      <input id="edit_nt_name" placeholder="Name" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.85rem;">
+      <input id="edit_nt_category" placeholder="Category" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.85rem;">
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:7px;">
+      <input id="edit_nt_tag" placeholder="Tag" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.85rem;">
+      <input id="edit_nt_obsidian_link" placeholder="Obsidian link name" style="padding:7px 10px; border-radius:7px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.85rem;">
+    </div>
+    <textarea id="edit_nt_template" style="width:100%; height:130px; padding:9px 12px; border-radius:8px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.82rem; font-family:monospace; resize:vertical;"></textarea>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button onclick="window.saveTemplateEdit()" style="flex:1; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Save Changes</button>
+      <button onclick="window.closeTemplateEdit()" style="flex:1; padding:9px; background:transparent; color:#a89b8a; border:1px solid #a89b8a; border-radius:8px; cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Load all JS modules -->
+<script type="module" src="app.js"></script>
+
+</body>
+</html>
