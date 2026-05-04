@@ -1,7 +1,7 @@
 // ===== TEMPLATES MODULE =====
 
 import { state } from "./state.js";
-import { saveNotesToStorage, autoSaveNote } from "./notes.js";
+import { autoSaveNote } from "./notes.js";
 
 // ===== DEFAULT BUILT-IN TYPES =====
 const DEFAULT_NOTE_TYPES = [
