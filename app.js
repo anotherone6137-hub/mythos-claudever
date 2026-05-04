@@ -1,13 +1,13 @@
 // ===== APP.JS — MAIN ENTRY POINT =====
 
-import { onAuthReady, loginWithGoogle as firebaseLogin, logOut as firebaseLogout } from "./firebase-config.js";
-import { state }                                        from "./state.js";
-import { loadCharacters }                               from "./characters.js";
-import { loadAndBuildTree }                             from "./tree.js";
-import { initNotes }                                    from "./notes.js";
-import { loadNoteTypes, populateNoteTypeDropdown }      from "./templates.js";
+import { onAuthReady, firebaseLogin, firebaseLogout } from "./firebase-config.js";
+import { state }                                      from "./state.js";
+import { loadCharacters }                             from "./characters.js";
+import { loadAndBuildTree }                           from "./tree.js";
+import { initNotes }                                  from "./notes.js";
+import { loadNoteTypes, populateNoteTypeDropdown }    from "./templates.js";
 import "./export.js";
-import { loadBooks, renderBookList }                    from "./books.js";
+import { loadBooks, renderBookList }                  from "./books.js";
 
 // ===== TAB SWITCHER =====
 window.switchTab = function(tab, btn) {
@@ -19,16 +19,15 @@ window.switchTab = function(tab, btn) {
 
   const el = document.getElementById("tab-" + tab);
   if (el) {
-    el.style.display = tab === "notes" ? "flex" : "block";
+    el.style.display = tab === "notes" || tab === "books" ? "flex" : "block";
     el.classList.add("active");
   }
-  btn.classList.add("active");
+  if (btn) btn.classList.add("active");
 
-  if (tab === "home")        { /* static, nothing to load */ }
-  if (tab === "tree")        loadAndBuildTree();
-  if (tab === "notes")       initNotes();
-  if (tab === "characters")  { document.getElementById("listView").style.display = "block"; loadCharacters(); }
-  if (tab === "books")       renderBookList();
+  if (tab === "tree")       loadAndBuildTree();
+  if (tab === "notes")      initNotes();
+  if (tab === "characters") { document.getElementById("listView").style.display = "block"; loadCharacters(); }
+  if (tab === "books")      renderBookList();
 };
 
 // ===== THEME TOGGLE =====
@@ -40,43 +39,43 @@ window.toggleTheme = function() {
 
 // ===== NOTES SIDEBAR TOGGLE =====
 window.toggleNotesSidebar = function() {
-  const sidebar = document.getElementById("notesSidebar");
-  const btn     = document.getElementById("sidebarToggleBtn");
+  const sidebar   = document.getElementById("notesSidebar");
+  const btn       = document.getElementById("sidebarToggleBtn");
   const collapsed = sidebar.classList.toggle("collapsed");
   btn.textContent = collapsed ? "▶" : "◀";
-  btn.title = collapsed ? "Show sidebar" : "Hide sidebar";
+  btn.title       = collapsed ? "Show sidebar" : "Hide sidebar";
 };
 
 // ===== AUTH UI =====
 function showApp(user) {
-  document.getElementById("authScreen").style.display  = "none";
-  document.getElementById("appContent").style.display  = "block";
-  document.getElementById("userEmail").textContent     = user.email;
-  document.getElementById("logoutBtn").style.display   = "inline-block";
+  document.getElementById("authScreen").style.display = "none";
+  document.getElementById("appContent").style.display = "block";
+  document.getElementById("userEmail").textContent    = user.email;
+  document.getElementById("logoutBtn").style.display  = "inline-block";
 
-  // Bootstrap
   loadNoteTypes();
   populateNoteTypeDropdown();
   loadBooks();
-  loadCharacters();   // preload silently so Characters tab is instant
-  initNotes();        // preload notes for backlinks + graph
+  loadCharacters();
+  initNotes();
 
-  // Start on Home tab
-  const homeTab = document.getElementById("tab-home");
-  const charTab = document.getElementById("tab-characters");
-  charTab.classList.remove("active");
-  homeTab.classList.add("active");
-  homeTab.style.display = "block";
-  charTab.style.display = "none";
-  document.getElementById("tab-btn-home").classList.add("active");
-  document.getElementById("tab-btn-characters").classList.remove("active");
+  // Default to Home tab
+  document.querySelectorAll(".view").forEach(v => {
+    v.classList.remove("active"); v.style.display = "none";
+  });
+  document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
+
+  const homeEl = document.getElementById("tab-home");
+  if (homeEl) { homeEl.style.display = "block"; homeEl.classList.add("active"); }
+  const homeBtn = document.getElementById("tab-btn-home");
+  if (homeBtn) homeBtn.classList.add("active");
 }
 
 function showAuthScreen() {
-  document.getElementById("authScreen").style.display  = "flex";
-  document.getElementById("appContent").style.display  = "none";
-  document.getElementById("logoutBtn").style.display   = "none";
-  document.getElementById("userEmail").textContent     = "";
+  document.getElementById("authScreen").style.display = "flex";
+  document.getElementById("appContent").style.display = "none";
+  document.getElementById("logoutBtn").style.display  = "none";
+  document.getElementById("userEmail").textContent    = "";
 }
 
 window.loginWithGoogle = async function() {
@@ -95,16 +94,19 @@ window.logOut = async function() {
   await firebaseLogout();
 };
 
-// ===== BOOT — wait for Firebase to confirm auth state =====
-// Restore saved theme preference
+// ===== BOOT =====
+// Restore theme
 if (localStorage.getItem("mythos_theme") === "light") {
   document.body.classList.add("light");
-  document.getElementById("themeToggleBtn").textContent = "🌙 Dark";
+  const btn = document.getElementById("themeToggleBtn");
+  if (btn) btn.textContent = "🌙 Dark";
 }
 
+// Helper for books delete button
+window.__currentBookId = () => state.currentBookId;
+
+// Wait for Firebase auth to confirm before showing anything
 onAuthReady(user => {
   if (user) showApp(user);
   else      showAuthScreen();
 });
-
-window.__currentBookId = () => state.currentBookId;
