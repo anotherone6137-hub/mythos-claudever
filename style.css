@@ -542,7 +542,17 @@ body.light #graphView > div:last-child {
   border-color: var(--border) !important;
 }
 
-/* --- Notes: sidebar buttons --- */
+/* --- Books sidebar collapse --- */
+#booksSidebar {
+  transition: width 0.25s ease, min-width 0.25s ease, padding 0.25s ease;
+  overflow: hidden;
+}
+#booksSidebar.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
 body.light #notesSidebar button {
   background: var(--bg-deep) !important;
   border-color: var(--border) !important;
