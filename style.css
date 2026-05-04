@@ -491,3 +491,130 @@ header h1 { font-size: 1.3rem; color: var(--accent); letter-spacing: 1px; }
   .home-card       { padding: 14px 16px; gap: 12px; }
   .home-card-icon  { font-size: 1.4rem; width: 36px; }
 }
+
+/* ===== LIGHT MODE — INLINE STYLE OVERRIDES ===== */
+/* The notes and books panels use hardcoded inline colours.
+   These rules override them when light mode is active.       */
+
+/* --- Notes: sidebar inner border and bottom button strip --- */
+body.light #notesSidebar > div { border-color: var(--border) !important; }
+body.light #notesSidebar { background: var(--bg-surface) !important; border-color: var(--border) !important; }
+
+/* --- Notes: editor header bar (title input row) --- */
+body.light #noteEditor > div:first-child {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Notes: toolbar row --- */
+body.light #noteEditor > div:nth-child(2) {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Notes: textarea and preview pane --- */
+body.light #noteBody {
+  background: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+body.light #notePreview {
+  background: var(--bg-base) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Notes: backlinks bar --- */
+body.light #noteBacklinksBar {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Notes: graph view panels --- */
+body.light #graphView > div:first-child {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+body.light #graphCanvas {
+  background: var(--bg-base) !important;
+}
+body.light #graphView > div:last-child {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Notes: sidebar buttons --- */
+body.light #notesSidebar button {
+  background: var(--bg-deep) !important;
+  border-color: var(--border) !important;
+}
+body.light #notesSidebar button:first-of-type {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+  border-color: var(--accent) !important;
+}
+body.light #notesSidebar input {
+  background: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Notes: title input and tag input in editor --- */
+body.light #noteTitleInput { color: var(--accent) !important; }
+body.light #noteTypeSelect {
+  background: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+body.light #noteTagsInput {
+  background: var(--bg-surface) !important;
+  color: var(--text-link) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Books: sidebar --- */
+body.light #booksSidebar {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+body.light #booksSidebar > div {
+  border-color: var(--border) !important;
+}
+body.light #booksSidebar button {
+  background: var(--accent) !important;
+  color: var(--accent-text) !important;
+  border-color: var(--accent) !important;
+}
+
+/* --- Books: reader header --- */
+body.light #bookReader > div:first-child {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Books: search bar row --- */
+body.light #bookReader > div:nth-child(2) {
+  background: var(--bg-surface) !important;
+  border-color: var(--border) !important;
+}
+body.light #bookSearchInput {
+  background: var(--bg-base) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Modals (export, template, add book) --- */
+body.light #exportModal > div,
+body.light #templateManagerModal > div,
+body.light #templateEditModal > div,
+body.light #addBookModal > div {
+  background: var(--bg-surface) !important;
+  border-color: var(--accent) !important;
+}
+body.light #exportModal > div > div,
+body.light #templateManagerModal > div > div {
+  background: var(--bg-base) !important;
+  border-color: var(--border) !important;
+}
+
+/* --- Auth screen --- */
+body.light #authScreen { background: var(--bg-base) !important; }
