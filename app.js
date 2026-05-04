@@ -46,6 +46,15 @@ window.toggleNotesSidebar = function() {
   btn.title       = collapsed ? "Show sidebar" : "Hide sidebar";
 };
 
+// ===== BOOKS SIDEBAR TOGGLE =====
+window.toggleBooksSidebar = function() {
+  const sidebar   = document.getElementById("booksSidebar");
+  const btn       = document.getElementById("booksSidebarToggleBtn");
+  const collapsed = sidebar.classList.toggle("collapsed");
+  btn.textContent = collapsed ? "▶" : "◀";
+  btn.title       = collapsed ? "Show sidebar" : "Hide sidebar";
+};
+
 // ===== AUTH UI =====
 function showApp(user) {
   document.getElementById("authScreen").style.display = "none";
