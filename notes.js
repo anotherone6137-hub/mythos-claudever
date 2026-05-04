@@ -1,27 +1,50 @@
 // ===== NOTES MODULE =====
+// Notes are stored in Firestore so they sync across all devices.
 
+import {
+  collection, addDoc, getDocs, deleteDoc, updateDoc, doc, setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import { db } from "./firebase-config.js";
 import { state } from "./state.js";
 
-// ===== STORAGE =====
-export function saveNotesToStorage() {
-  try { localStorage.setItem("mythos_notes", JSON.stringify(state.notes)); } catch (e) {}
+const NOTES_COL = "notes";
+
+// ===== LOAD ALL NOTES FROM FIRESTORE =====
+export async function loadNotes() {
+  try {
+    const snap = await getDocs(collection(db, NOTES_COL));
+    state.notes = [];
+    snap.forEach(d => state.notes.push({ id: d.id, ...d.data() }));
+    // Sort newest first
+    state.notes.sort((a, b) => (b.updated || 0) - (a.updated || 0));
+  } catch (e) {
+    console.error("Failed to load notes:", e);
+  }
 }
 
-function genNoteId() {
-  return "n_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+// ===== SAVE A SINGLE NOTE TO FIRESTORE =====
+async function saveNoteToFirestore(note) {
+  try {
+    const { id, ...data } = note;
+    await setDoc(doc(db, NOTES_COL, id), data);
+  } catch (e) {
+    console.error("Failed to save note:", e);
+  }
 }
 
 // ===== CREATE NOTE =====
-export function createNote() {
+export async function createNote() {
   const note = {
-    id:      genNoteId(),
-    title:   "Untitled Note",
-    tags:    "",
-    body:    "",
-    updated: Date.now()
+    id:       "n_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    title:    "Untitled Note",
+    tags:     "",
+    body:     "",
+    noteType: "",
+    updated:  Date.now()
   };
+  await saveNoteToFirestore(note);
   state.notes.unshift(note);
-  saveNotesToStorage();
   renderNoteList();
   openNote(note.id);
   setTimeout(() => document.getElementById("noteTitleInput").select(), 50);
@@ -33,11 +56,10 @@ export function openNote(id) {
   const note = state.notes.find(n => n.id === id);
   if (!note) return;
 
-  document.getElementById("noteTitleInput").value = note.title || "";
-  document.getElementById("noteTagsInput").value  = note.tags  || "";
-  document.getElementById("noteBody").value        = note.body  || "";
+  document.getElementById("noteTitleInput").value = note.title    || "";
+  document.getElementById("noteTagsInput").value  = note.tags     || "";
+  document.getElementById("noteBody").value        = note.body     || "";
 
-  // Restore note type dropdown
   state.currentNoteType = note.noteType || "";
   const sel = document.getElementById("noteTypeSelect");
   if (sel) sel.value = state.currentNoteType;
@@ -50,36 +72,42 @@ export function openNote(id) {
 // ===== AUTO SAVE =====
 export function autoSaveNote() {
   clearTimeout(state.autoSaveTimer);
-  state.autoSaveTimer = setTimeout(() => {
+  state.autoSaveTimer = setTimeout(async () => {
     if (!state.currentNoteId) return;
     const idx = state.notes.findIndex(n => n.id === state.currentNoteId);
     if (idx === -1) return;
+
     state.notes[idx].title    = document.getElementById("noteTitleInput").value || "Untitled";
     state.notes[idx].tags     = document.getElementById("noteTagsInput").value;
     state.notes[idx].body     = document.getElementById("noteBody").value;
     state.notes[idx].noteType = state.currentNoteType || "";
     state.notes[idx].updated  = Date.now();
-    saveNotesToStorage();
+
+    await saveNoteToFirestore(state.notes[idx]);
     renderNoteList();
     updateNoteBacklinks(state.notes[idx].title);
     if (state.previewMode) renderPreview();
-  }, 400);
+  }, 600);
 }
 
 // ===== DELETE NOTE =====
-export function deleteCurrentNote() {
+export async function deleteCurrentNote() {
   if (!state.currentNoteId) return;
   if (!confirm("Delete this note?")) return;
-  state.notes = state.notes.filter(n => n.id !== state.currentNoteId);
-  state.currentNoteId = null;
-  saveNotesToStorage();
-  renderNoteList();
-  document.getElementById("noteTitleInput").value = "";
-  document.getElementById("noteTagsInput").value  = "";
-  document.getElementById("noteBody").value        = "";
-  document.getElementById("notePreview").innerHTML = "";
-  document.getElementById("noteBacklinksList").textContent = "—";
-  if (state.notes.length > 0) openNote(state.notes[0].id);
+  try {
+    await deleteDoc(doc(db, NOTES_COL, state.currentNoteId));
+    state.notes = state.notes.filter(n => n.id !== state.currentNoteId);
+    state.currentNoteId = null;
+    renderNoteList();
+    document.getElementById("noteTitleInput").value = "";
+    document.getElementById("noteTagsInput").value  = "";
+    document.getElementById("noteBody").value        = "";
+    document.getElementById("notePreview").innerHTML = "";
+    document.getElementById("noteBacklinksList").textContent = "—";
+    if (state.notes.length > 0) openNote(state.notes[0].id);
+  } catch (e) {
+    alert("Error deleting note: " + e.message);
+  }
 }
 
 // ===== RENDER NOTE LIST =====
@@ -87,14 +115,15 @@ export function renderNoteList() {
   const q = (document.getElementById("noteSearch").value || "").toLowerCase();
   const filtered = state.notes.filter(n =>
     !q ||
-    n.title.toLowerCase().includes(q) ||
+    (n.title || "").toLowerCase().includes(q) ||
     (n.body  || "").toLowerCase().includes(q) ||
     (n.tags  || "").toLowerCase().includes(q)
   );
 
   const container = document.getElementById("noteList");
   if (!filtered.length) {
-    container.innerHTML = `<div style="color:#a89b8a; font-size:0.82rem; text-align:center; padding:20px;">No notes yet.<br>Click + New Note to start.</div>`;
+    container.innerHTML = `<div style="color:#a89b8a; font-size:0.82rem; text-align:center; padding:20px;">
+      ${state.notes.length ? "No results." : "No notes yet.<br>Click + New Note to start."}</div>`;
     return;
   }
   container.innerHTML = filtered.map(note => `
@@ -103,7 +132,7 @@ export function renderNoteList() {
       <div class="note-item-title">${note.title || "Untitled"}</div>
       <div class="note-item-meta">${
         note.tags
-          ? note.tags.split(",").map(t => "#" + t.trim()).join(" ") + " · "
+          ? note.tags.split(",").map(t => "#" + t.trim()).filter(Boolean).join(" ") + " · "
           : ""
       }${new Date(note.updated).toLocaleDateString()}</div>
     </div>
@@ -113,10 +142,10 @@ export function renderNoteList() {
 // ===== BACKLINKS =====
 export function updateNoteBacklinks(title) {
   if (!title) return;
-  const refs     = state.notes.filter(n =>
+  const refs = state.notes.filter(n =>
     n.id !== state.currentNoteId && n.body && n.body.includes("[[" + title + "]]")
   );
-  const charRefs = state.allCharacters.filter(c =>
+  const charRefs = (state.allCharacters || []).filter(c =>
     c.notes && c.notes.includes("[[" + title + "]]")
   );
   const all = [
@@ -138,22 +167,21 @@ export function renderMarkdown(text) {
     .replace(/</g,  "&lt;")
     .replace(/>/g,  "&gt;")
     .replace(/```([\s\S]*?)```/g, (_, c) => `<pre><code>${c.trim()}</code></pre>`)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
-    .replace(/^## (.+)$/gm,  "<h2>$1</h2>")
-    .replace(/^# (.+)$/gm,   "<h1>$1</h1>")
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g,    "<em>$1</em>")
-    .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
-    .replace(/^- (.+)$/gm, "<li>$1</li>")
-    .replace(/(<li>.*<\/li>)/gs, "<ul>$1</ul>")
+    .replace(/`([^`]+)`/g,        "<code>$1</code>")
+    .replace(/^### (.+)$/gm,      "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm,       "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm,        "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g,    "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g,        "<em>$1</em>")
+    .replace(/^> (.+)$/gm,        "<blockquote>$1</blockquote>")
+    .replace(/^- (.+)$/gm,        "<li>$1</li>")
+    .replace(/(<li>.*<\/li>)/gs,  "<ul>$1</ul>")
     .replace(/\n\n/g, "</p><p>")
     .replace(/\n/g,   "<br>");
 
-  // [[links]] — notes first, then characters, then ghost
   html = html.replace(/\[\[([^\]]+)\]\]/g, (_, name) => {
     const note = state.notes.find(n => n.title.toLowerCase() === name.toLowerCase());
-    const char = state.allCharacters.find(c => c.name.toLowerCase() === name.toLowerCase());
+    const char = (state.allCharacters || []).find(c => c.name.toLowerCase() === name.toLowerCase());
     if (note) return `<span class="note-link" onclick="window.openNote('${note.id}')">${name}</span>`;
     if (char) return `<span class="note-link" onclick="window.openCharacterPage('${char.name}')">${name}</span>`;
     return `<span style="color:#ef9a9a; cursor:pointer;"
@@ -204,10 +232,17 @@ export function insertMd(before, after) {
 }
 
 // ===== CREATE NOTE FROM [[LINK]] =====
-export function createLinkedNote(title) {
-  const note = { id: genNoteId(), title, tags: "", body: "", updated: Date.now() };
+export async function createLinkedNote(title) {
+  const note = {
+    id:       "n_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+    title,
+    tags:     "",
+    body:     "",
+    noteType: "",
+    updated:  Date.now()
+  };
+  await saveNoteToFirestore(note);
   state.notes.unshift(note);
-  saveNotesToStorage();
   renderNoteList();
   openNote(note.id);
 }
@@ -234,13 +269,12 @@ function renderGraph() {
   state.notes.forEach(n => {
     nodeMap[n.title] = { id: n.title, label: n.title, type: "note", noteId: n.id };
   });
-  state.allCharacters.forEach(c => {
+  (state.allCharacters || []).forEach(c => {
     if (!nodeMap[c.name]) nodeMap[c.name] = { id: c.name, label: c.name, type: "char", charName: c.name };
   });
 
   const linkSet = new Set();
 
-  // Links from notes
   state.notes.forEach(n => {
     const matches = (n.body || "").match(/\[\[([^\]]+)\]\]/g) || [];
     matches.forEach(m => {
@@ -253,8 +287,7 @@ function renderGraph() {
     });
   });
 
-  // Links from character notes
-  state.allCharacters.forEach(c => {
+  (state.allCharacters || []).forEach(c => {
     const matches = (c.notes || "").match(/\[\[([^\]]+)\]\]/g) || [];
     matches.forEach(m => {
       const target = m.slice(2, -2);
@@ -326,19 +359,22 @@ function renderGraph() {
 }
 
 // ===== INIT NOTES =====
-export function initNotes() {
+export async function initNotes() {
+  document.getElementById("noteList").innerHTML =
+    `<div style="color:#a89b8a; font-size:0.82rem; text-align:center; padding:20px;">Loading...</div>`;
+  await loadNotes();
   renderNoteList();
-  if (state.notes.length > 0) openNote(state.notes[0].id);
+  if (state.notes.length > 0 && !state.currentNoteId) openNote(state.notes[0].id);
 }
 
 // ===== EXPOSE TO WINDOW =====
-window.createNote       = createNote;
-window.openNote         = openNote;
-window.autoSaveNote     = autoSaveNote;
+window.createNote        = createNote;
+window.openNote          = openNote;
+window.autoSaveNote      = autoSaveNote;
 window.deleteCurrentNote = deleteCurrentNote;
-window.renderNoteList   = renderNoteList;
-window.togglePreview    = togglePreview;
-window.insertMd         = insertMd;
-window.createLinkedNote = createLinkedNote;
-window.showGraphView    = showGraphView;
-window.hideGraphView    = hideGraphView;
+window.renderNoteList    = renderNoteList;
+window.togglePreview     = togglePreview;
+window.insertMd          = insertMd;
+window.createLinkedNote  = createLinkedNote;
+window.showGraphView     = showGraphView;
+window.hideGraphView     = hideGraphView;
