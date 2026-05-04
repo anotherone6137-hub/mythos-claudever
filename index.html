@@ -12,11 +12,94 @@
 <header>
   <h1>🏛️ Mythos Study System</h1>
   <div class="nav-tabs">
+    <button class="nav-tab" id="tab-btn-home" onclick="window.switchTab('home', this)">🏠 Home</button>
     <button class="nav-tab active" id="tab-btn-characters" onclick="window.switchTab('characters', this)">📚 Characters</button>
     <button class="nav-tab" id="tab-btn-tree" onclick="window.switchTab('tree', this)">🌳 Family Tree</button>
     <button class="nav-tab" id="tab-btn-notes" onclick="window.switchTab('notes', this)">📝 Notes</button>
+    <button class="nav-tab" id="tab-btn-books" onclick="window.switchTab('books', this)">📖 Books</button>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <button class="theme-toggle" id="themeToggleBtn" onclick="window.toggleTheme()">☀️ Light</button>
+    <span id="userEmail" style="color:var(--text-muted); font-size:0.75rem;"></span>
+    <button id="logoutBtn" onclick="window.logOut()" style="display:none; background:transparent; border:1px solid var(--text-muted); color:var(--text-muted); padding:5px 12px; border-radius:20px; cursor:pointer; font-size:0.75rem;">Sign out</button>
   </div>
 </header>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="authScreen" style="display:none; position:fixed; inset:0; background:#1a1a2e; z-index:9999; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
+  <div style="font-size:3rem; margin-bottom:12px;">🏛️</div>
+  <h1 style="color:#e2b96f; font-size:1.4rem; margin-bottom:6px; font-family:Georgia,serif;">Mythos Study System</h1>
+  <p style="color:#a89b8a; font-size:0.88rem; margin-bottom:28px;">Sign in to access your characters, notes, and books.</p>
+  <button onclick="window.loginWithGoogle()"
+    style="background:#e2b96f; color:#1a1a2e; border:none; padding:13px 28px; border-radius:12px; font-size:1rem; font-weight:bold; cursor:pointer; display:flex; align-items:center; gap:10px; margin:0 auto;">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Sign in with Google
+  </button>
+  <p id="authError" style="color:#ef9a9a; font-size:0.82rem; margin-top:14px; min-height:20px;"></p>
+</div>
+
+<!-- ===== APP CONTENT (hidden until signed in) ===== -->
+<div id="appContent" style="display:none;">
+
+<!-- ===== HOME TAB ===== -->
+<div id="tab-home" class="view">
+  <!-- HERO -->
+  <div class="home-hero">
+    <div class="home-hero-bg"></div>
+    <div class="home-hero-content">
+      <div class="home-hero-emblem">🏛️</div>
+      <h1 class="home-hero-title">Mythos Study System</h1>
+      <p class="home-hero-sub">A personal archive for studying Greek mythology —<br>characters, relationships, notes, and primary sources, all in one place.</p>
+      <div class="home-hero-rule"></div>
+      <p class="home-hero-quote">"Sing, O goddess, the anger of Achilles son of Peleus,<br>that brought countless ills upon the Achaeans."</p>
+      <p class="home-hero-quote-attr">— Homer, <em>The Iliad</em>, Book I</p>
+    </div>
+  </div>
+
+  <!-- SECTION CARDS -->
+  <div class="home-cards-wrap">
+    <div class="home-section-label">Where would you like to go?</div>
+    <div class="home-cards">
+
+      <div class="home-card" onclick="window.switchTab('characters', document.getElementById('tab-btn-characters'))">
+        <div class="home-card-icon">📚</div>
+        <div class="home-card-body">
+          <div class="home-card-title">Characters</div>
+          <div class="home-card-desc">Browse and build your cast — gods, heroes, titans, monsters. Wiki-linked, tag-filtered, exportable to Obsidian.</div>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </div>
+
+      <div class="home-card" onclick="window.switchTab('tree', document.getElementById('tab-btn-tree'))">
+        <div class="home-card-icon">🌳</div>
+        <div class="home-card-body">
+          <div class="home-card-title">Family Tree</div>
+          <div class="home-card-desc">Visualise relationships across the pantheon — parents, siblings, spouses, enemies — as an interactive network.</div>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </div>
+
+      <div class="home-card" onclick="window.switchTab('notes', document.getElementById('tab-btn-notes'))">
+        <div class="home-card-icon">📝</div>
+        <div class="home-card-body">
+          <div class="home-card-title">Notes</div>
+          <div class="home-card-desc">Write theme analyses, essay plans, passage breakdowns. Markdown editor with [[backlinks]] and graph view.</div>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </div>
+
+      <div class="home-card" onclick="window.switchTab('books', document.getElementById('tab-btn-books'))">
+        <div class="home-card-icon">📖</div>
+        <div class="home-card-body">
+          <div class="home-card-title">Books</div>
+          <div class="home-card-desc">Upload your PDFs and search across them instantly. Found a quote? Send it straight to a note with one click.</div>
+        </div>
+        <div class="home-card-arrow">→</div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- ===== CHARACTERS TAB ===== -->
 <div id="tab-characters" class="view active">
@@ -83,6 +166,10 @@
         <option>Hero</option><option>Demigod</option><option>Monster</option>
         <option>Mortal</option><option>Other</option>
       </select>
+      <button onclick="window.exportCharZip()" title="Export all characters as ZIP"
+        style="padding:9px 14px; background:var(--bg-surface); color:var(--accent); border:1px solid var(--accent); border-radius:8px; cursor:pointer; font-size:0.82rem; white-space:nowrap;">
+        🗜 Export All
+      </button>
     </div>
     <div class="tag-filter-bar" id="tagFilterBar" style="max-width:700px"></div>
 
@@ -163,8 +250,9 @@
 <div id="tab-tree" class="view" style="padding:24px;">
   <div style="max-width:1100px; margin:0 auto;">
 
-    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
-      <button onclick="window.toggleLegend()" style="background:#0f3460; color:#e2b96f; border:1px solid #e2b96f; padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.82rem;">📖 Show Legend</button>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-bottom:8px;">
+      <button onclick="window.exportCanvasToObsidian()" style="background:var(--bg-deep); color:var(--accent); border:1px solid var(--accent); padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.82rem;">🗺 Export to Obsidian Canvas</button>
+      <button onclick="window.toggleLegend()" style="background:var(--bg-deep); color:var(--accent); border:1px solid var(--accent); padding:6px 14px; border-radius:8px; cursor:pointer; font-size:0.82rem;">📖 Show Legend</button>
     </div>
 
     <!-- LEGEND PANEL -->
@@ -251,7 +339,7 @@
 <div id="tab-notes" class="view" style="padding:0; height:calc(100vh - 60px); flex-direction:row;">
 
   <!-- SIDEBAR -->
-  <div id="notesSidebar" style="width:260px; min-width:220px; background:#16213e; border-right:1px solid #0f3460; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+  <div id="notesSidebar" style="width:260px; min-width:220px; background:var(--bg-surface); border-right:1px solid var(--border); display:flex; flex-direction:column; height:100%; overflow:hidden;">
     <div style="padding:14px 14px 10px; border-bottom:1px solid #0f3460;">
       <div style="display:flex;gap:6px;margin-bottom:2px;">
         <button onclick="window.createNote()" style="flex:1; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">+ New Note</button>
@@ -268,7 +356,9 @@
   </div>
 
   <!-- EDITOR AREA -->
-  <div id="notesMain" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="notesMain" style="flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+    <!-- Collapse/expand sidebar button -->
+    <button class="sidebar-toggle" id="sidebarToggleBtn" onclick="window.toggleNotesSidebar()" title="Toggle sidebar">◀</button>
 
     <!-- NOTE EDITOR -->
     <div id="noteEditor" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
@@ -418,6 +508,93 @@
     </div>
   </div>
 </div>
+
+<!-- ===== BOOKS TAB ===== -->
+<div id="tab-books" class="view" style="padding:0; height:calc(100vh - 60px); flex-direction:row;">
+
+  <!-- SIDEBAR -->
+  <div id="booksSidebar" style="width:260px; min-width:220px; background:#16213e; border-right:1px solid #0f3460; display:flex; flex-direction:column; height:100%; overflow:hidden;">
+    <div style="padding:14px 14px 10px; border-bottom:1px solid #0f3460;">
+      <button onclick="window.showAddBookModal()" style="width:100%; padding:9px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:0.85rem;">+ Add Book (PDF)</button>
+    </div>
+    <div id="bookList" style="flex:1; overflow-y:auto; padding:8px 6px;"></div>
+  </div>
+
+  <!-- MAIN READER AREA -->
+  <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+
+    <!-- PLACEHOLDER when no book selected -->
+    <div id="bookPlaceholder" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#a89b8a; text-align:center; padding:40px;">
+      <div style="font-size:3rem; margin-bottom:16px;">📖</div>
+      <div style="font-size:1rem; color:#e0d7c6; margin-bottom:8px;">No book selected</div>
+      <div style="font-size:0.85rem; line-height:1.7;">Upload a PDF using <b style="color:#e2b96f;">+ Add Book</b>.<br>
+        Text is extracted locally in your browser —<br>nothing is uploaded to any server.</div>
+    </div>
+
+    <!-- READER when a book is open -->
+    <div id="bookReader" style="flex:1; display:none; flex-direction:column; overflow:hidden;">
+
+      <!-- HEADER -->
+      <div style="padding:12px 20px; border-bottom:1px solid #0f3460; background:#1a1a2e; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <div style="flex:1;">
+          <div id="bookReaderTitle" style="color:#e2b96f; font-size:1rem; font-weight:bold; font-family:Georgia,serif;"></div>
+          <div id="bookPageInfo" style="color:#a89b8a; font-size:0.75rem; margin-top:2px;"></div>
+        </div>
+        <button onclick="window.deleteBook(window.__currentBookId())"
+          style="background:transparent; border:1px solid #c0392b; color:#c0392b; padding:5px 12px; border-radius:6px; cursor:pointer; font-size:0.78rem;">🗑 Remove</button>
+      </div>
+
+      <!-- SEARCH BAR -->
+      <div style="padding:12px 20px; border-bottom:1px solid #0f3460; background:#16213e; display:flex; gap:10px; align-items:center;">
+        <input id="bookSearchInput" placeholder="🔍 Search for a word, phrase, or quote..."
+          autocomplete="off" oninput="window.searchBook()"
+          style="flex:1; padding:9px 14px; border-radius:8px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.9rem; outline:none;">
+        <span id="bookResultCount" style="color:#a89b8a; font-size:0.78rem; white-space:nowrap;"></span>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="bookResults" style="flex:1; overflow-y:auto; padding:16px 20px; display:flex; flex-direction:column; gap:12px;"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== ADD BOOK MODAL ===== -->
+<div id="addBookModal" style="display:none; position:fixed; inset:0; background:#000000bb; z-index:999; align-items:center; justify-content:center;">
+  <div style="background:#16213e; border:1px solid #e2b96f; border-radius:18px; padding:28px; max-width:480px; width:92%; position:relative;">
+    <button onclick="window.closeAddBookModal()" style="position:absolute;top:14px;right:16px;background:transparent;border:none;color:#a89b8a;font-size:1.3rem;cursor:pointer;">✕</button>
+    <h2 style="color:#e2b96f; margin-bottom:6px; font-size:1.05rem;">📖 Add a Book</h2>
+    <p style="color:#a89b8a; font-size:0.8rem; margin-bottom:18px; line-height:1.6;">
+      Upload a PDF — text is extracted entirely in your browser. Nothing is uploaded anywhere.
+      Works with digital PDFs (not scanned images).
+    </p>
+
+    <div class="section-label">Book Title *</div>
+    <input id="bookTitleInput" placeholder="e.g. The Iliad" autocomplete="off"
+      style="width:100%; padding:9px 12px; margin-bottom:10px; border-radius:8px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.88rem;">
+
+    <div class="section-label">Author (optional)</div>
+    <input id="bookAuthorInput" placeholder="e.g. Homer (trans. Emily Wilson)" autocomplete="off"
+      style="width:100%; padding:9px 12px; margin-bottom:10px; border-radius:8px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.88rem;">
+
+    <div class="section-label">PDF File *</div>
+    <input id="bookFileInput" type="file" accept=".pdf"
+      style="width:100%; padding:9px 12px; margin-bottom:14px; border-radius:8px; border:1px solid #0f3460; background:#1a1a2e; color:#e0d7c6; font-size:0.85rem; cursor:pointer;">
+
+    <div id="bookUploadStatus" style="min-height:22px; margin-bottom:10px; font-size:0.82rem;"></div>
+
+    <button id="bookUploadBtn" onclick="window.uploadBook()"
+      style="width:100%; padding:11px; background:#e2b96f; color:#1a1a2e; border:none; border-radius:10px; font-size:0.95rem; font-weight:bold; cursor:pointer;">
+      📄 Extract & Add Book
+    </button>
+
+    <div style="margin-top:12px; background:#0f3460; border-radius:8px; padding:10px 13px; font-size:0.75rem; color:#a89b8a; line-height:1.6;">
+      ⚠️ <b style="color:#e2b96f;">Note:</b> This works with text-based PDFs only. Scanned pages (image PDFs) won't extract properly. Large books (500+ pages) may take 30–60 seconds.
+    </div>
+  </div>
+</div>
+
+</div><!-- end appContent -->
 
 <!-- Load all JS modules -->
 <script type="module" src="app.js"></script>
