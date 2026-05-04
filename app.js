@@ -1,12 +1,13 @@
 // ===== APP.JS — MAIN ENTRY POINT =====
 
-import { onAuthReady, loginWithGoogle, logOut } from "./firebase-config.js";
-import { loadCharacters }                        from "./characters.js";
-import { loadAndBuildTree }                      from "./tree.js";
-import { initNotes }                             from "./notes.js";
-import { loadNoteTypes, populateNoteTypeDropdown } from "./templates.js";
+import { onAuthReady, loginWithGoogle as firebaseLogin, logOut as firebaseLogout } from "./firebase-config.js";
+import { state }                                        from "./state.js";
+import { loadCharacters }                               from "./characters.js";
+import { loadAndBuildTree }                             from "./tree.js";
+import { initNotes }                                    from "./notes.js";
+import { loadNoteTypes, populateNoteTypeDropdown }      from "./templates.js";
 import "./export.js";
-import { loadBooks, renderBookList }             from "./books.js";
+import { loadBooks, renderBookList }                    from "./books.js";
 
 // ===== TAB SWITCHER =====
 window.switchTab = function(tab, btn) {
@@ -81,8 +82,7 @@ function showAuthScreen() {
 window.loginWithGoogle = async function() {
   try {
     document.getElementById("authError").textContent = "";
-    await loginWithGoogle();
-    // onAuthReady will fire and call showApp automatically
+    await firebaseLogin();
   } catch (e) {
     document.getElementById("authError").textContent =
       e.code === "auth/popup-closed-by-user"
@@ -92,8 +92,7 @@ window.loginWithGoogle = async function() {
 };
 
 window.logOut = async function() {
-  await logOut();
-  // onAuthReady will fire and call showAuthScreen automatically
+  await firebaseLogout();
 };
 
 // ===== BOOT — wait for Firebase to confirm auth state =====
