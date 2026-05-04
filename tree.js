@@ -246,3 +246,175 @@ function getRelatedChars(name) {
 // ===== EXPOSE TO WINDOW =====
 window.buildTree    = buildTree;
 window.toggleLegend = toggleLegend;
+
+// ===== EXPORT TO OBSIDIAN CANVAS =====
+// Generates a .canvas JSON file (Obsidian Canvas format).
+// Layout: hierarchical by generation (y-axis), spread by index (x-axis).
+// Nodes link to Characters/Name.md so [[links]] work inside Obsidian.
+// Edges are colour-coded to match the in-app tree legend.
+
+export function exportCanvasToObsidian() {
+  const characters = state.allCharacters;
+  if (!characters.length) {
+    alert("No characters loaded. Visit the Family Tree tab first to load data.");
+    return;
+  }
+
+  // ── 1. ASSIGN GENERATION LEVELS ──────────────────────────────────────────
+  // Build a child→parents map, then BFS from roots downward.
+  const nameSet   = new Set(characters.map(c => c.name));
+  const levelMap  = {};   // name → generation (0 = oldest)
+  const childrenOf = {};  // name → [child names]
+
+  characters.forEach(c => {
+    (c.children || []).forEach(child => {
+      if (!nameSet.has(child)) return;
+      (childrenOf[c.name] = childrenOf[c.name] || []).push(child);
+    });
+  });
+
+  // Root = characters whose parents are not in the dataset
+  const roots = characters.filter(c =>
+    !(c.parents || []).some(p => nameSet.has(p))
+  );
+
+  // BFS to assign levels
+  const queue = roots.map(c => ({ name: c.name, level: 0 }));
+  const visited = new Set();
+
+  while (queue.length) {
+    const { name, level } = queue.shift();
+    if (visited.has(name)) continue;
+    visited.add(name);
+    levelMap[name] = Math.max(levelMap[name] ?? 0, level);
+    (childrenOf[name] || []).forEach(child =>
+      queue.push({ name: child, level: level + 1 })
+    );
+  }
+
+  // Any unvisited characters (disconnected nodes) get level = max + 1
+  const maxLevel = Math.max(0, ...Object.values(levelMap));
+  characters.forEach(c => {
+    if (levelMap[c.name] === undefined) levelMap[c.name] = maxLevel + 1;
+  });
+
+  // ── 2. GROUP BY LEVEL AND SORT ────────────────────────────────────────────
+  const byLevel = {};
+  characters.forEach(c => {
+    const lvl = levelMap[c.name];
+    (byLevel[lvl] = byLevel[lvl] || []).push(c);
+  });
+  Object.values(byLevel).forEach(arr => arr.sort((a, b) => a.name.localeCompare(b.name)));
+
+  // ── 3. CALCULATE POSITIONS ────────────────────────────────────────────────
+  const NODE_W   = 200;
+  const NODE_H   = 70;
+  const H_GAP    = 40;   // horizontal gap between nodes
+  const V_GAP    = 120;  // vertical gap between levels
+  const posMap   = {};   // name → { x, y }
+
+  Object.entries(byLevel).forEach(([lvl, chars]) => {
+    const totalWidth = chars.length * NODE_W + (chars.length - 1) * H_GAP;
+    const startX     = -totalWidth / 2;
+    const y          = parseInt(lvl) * (NODE_H + V_GAP);
+
+    chars.forEach((c, i) => {
+      posMap[c.name] = {
+        x: Math.round(startX + i * (NODE_W + H_GAP)),
+        y
+      };
+    });
+  });
+
+  // ── 4. NODE COLOUR MAP (Obsidian canvas uses "1"–"6" or hex) ─────────────
+  // Obsidian presets: 1=red, 2=orange, 3=yellow, 4=green, 5=cyan, 6=purple
+  const obsidianColor = {
+    "God":     "5",   // cyan
+    "Goddess": "5",
+    "Titan":   "1",   // red
+    "Hero":    "4",   // green
+    "Demigod": "4",
+    "Monster": "2",   // orange
+    "Mortal":  "6",   // purple
+    "Other":   ""
+  };
+
+  // ── 5. BUILD CANVAS NODES ─────────────────────────────────────────────────
+  const nodes = characters.map(c => {
+    const pos   = posMap[c.name] || { x: 0, y: 0 };
+    const color = obsidianColor[c.type] || "";
+    const node  = {
+      id:     slugify(c.name),
+      type:   "file",
+      file:   `Characters/${c.name}.md`,
+      x:      pos.x,
+      y:      pos.y,
+      width:  NODE_W,
+      height: NODE_H
+    };
+    if (color) node.color = color;
+    return node;
+  });
+
+  // ── 6. BUILD CANVAS EDGES ─────────────────────────────────────────────────
+  // Edge colours match the in-app legend
+  const edgeColors = {
+    parent:      "#e2b96f",  // gold
+    sibling:     "#f48fb1",  // pink
+    spouse:      "#80cbc4",  // teal
+    enemy:       "#ef5350",  // red
+    friend:      "#aed581",  // green
+    complicated: "#ce93d8"   // purple
+  };
+
+  const edges  = [];
+  const edgeSet = new Set();
+
+  function addEdge(fromName, toName, relType, label) {
+    if (!nameSet.has(fromName) || !nameSet.has(toName)) return;
+    const key  = `${relType}:${fromName}:${toName}`;
+    const keyR = `${relType}:${toName}:${fromName}`;
+    if (edgeSet.has(key) || edgeSet.has(keyR)) return;
+    edgeSet.add(key);
+
+    const edge = {
+      id:       `e_${edges.length}`,
+      fromNode: slugify(fromName),
+      toNode:   slugify(toName),
+      color:    edgeColors[relType] || "#aaaaaa",
+      label
+    };
+
+    // Parent→child gets directional sides
+    if (relType === "parent") {
+      edge.fromSide = "bottom";
+      edge.toSide   = "top";
+    }
+
+    edges.push(edge);
+  }
+
+  characters.forEach(c => {
+    (c.children    || []).forEach(n  => addEdge(c.name, n,      "parent",      "parent → child"));
+    (c.siblings    || []).forEach(n  => addEdge(c.name, n,      "sibling",     "siblings"));
+    (c.spouse      || []).forEach(n  => addEdge(c.name, n,      "spouse",      "spouse"));
+    (c.friends     || []).forEach(n  => addEdge(c.name, n,      "friend",      "ally"));
+    (c.enemies     || []).forEach(n  => addEdge(c.name, n,      "enemy",       "enemy"));
+    (c.complicated || []).forEach(x  => addEdge(c.name, x.name, "complicated", x.note || "complicated"));
+  });
+
+  // ── 7. ASSEMBLE + DOWNLOAD ────────────────────────────────────────────────
+  const canvas = JSON.stringify({ nodes, edges }, null, 2);
+  const blob   = new Blob([canvas], { type: "application/json" });
+  const a      = document.createElement("a");
+  a.href       = URL.createObjectURL(blob);
+  a.download   = "Mythos Family Tree.canvas";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function slugify(name) {
+  return name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+}
+
+window.exportCanvasToObsidian = exportCanvasToObsidian;
