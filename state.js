@@ -9,14 +9,16 @@ export const state = {
   activeTagFilter: null,
   networkInstance: null,
 
-  // Notes
-  notes: (() => {
-    try { return JSON.parse(localStorage.getItem("mythos_notes") || "[]"); }
-    catch (e) { return []; }
-  })(),
+  // Notes — populated from Firestore on load
+  notes: [],
   currentNoteId: null,
   previewMode: false,
   autoSaveTimer: null,
   currentNoteType: "",
   graphNetwork: null,
+
+  // Books
+  books: [],
+  currentBookId: null,
+  bookChunks: {},      // { [bookId]: [{ text, startPage, endPage }] } — in-memory cache
 };
