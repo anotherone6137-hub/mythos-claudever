@@ -521,7 +521,8 @@
   </div>
 
   <!-- MAIN READER AREA -->
-  <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+  <div id="booksMain" style="flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+    <button class="sidebar-toggle" id="booksSidebarToggleBtn" onclick="window.toggleBooksSidebar()" title="Hide sidebar">◀</button>
 
     <!-- PLACEHOLDER when no book selected -->
     <div id="bookPlaceholder" style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#a89b8a; text-align:center; padding:40px;">
