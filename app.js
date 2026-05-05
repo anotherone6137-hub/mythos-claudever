@@ -114,8 +114,25 @@ if (localStorage.getItem("mythos_theme") === "light") {
 // Helper for books delete button
 window.__currentBookId = () => state.currentBookId;
 
+// ===== AUTHORISED EMAIL =====
+// Only this account can access the app.
+// Change this to your Google account email.
+const AUTHORISED_EMAIL = "hogwartsalumini@gmail.com";
+
 // Wait for Firebase auth to confirm before showing anything
-onAuthReady(user => {
-  if (user) showApp(user);
-  else      showAuthScreen();
+onAuthReady(async user => {
+  if (user) {
+    if (user.email !== AUTHORISED_EMAIL) {
+      // Wrong account — sign them out immediately and show error
+      await firebaseLogout();
+      document.getElementById("authScreen").style.display = "flex";
+      document.getElementById("appContent").style.display = "none";
+      document.getElementById("authError").textContent =
+        "Access denied. This app is private.";
+      return;
+    }
+    showApp(user);
+  } else {
+    showAuthScreen();
+  }
 });
